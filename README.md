@@ -35,10 +35,12 @@ python -m pytest -q tests
 
 ### Scheduling
 
-`.github/workflows/daily.yml` runs at 21:30 UTC on weekdays and commits the logs back.
+A scheduled Claude session follows `bot/DAILY_SESSION.md` each weekday after the close and acts as the decider itself (no API key needed).
+Or use `.github/workflows/daily.yml`, which runs at 21:30 UTC on weekdays and commits the logs back.
 - Add an `ANTHROPIC_API_KEY` repository secret. Without it, the rule decides instead of Claude.
 - GitHub only runs scheduled workflows from the **default branch**, so this starts once the code is merged there.
   You can also trigger it by hand from the Actions tab (`workflow_dispatch`).
+- Use only one of the two schedules. Each keeps its own book on its own branch.
 
 ## The original notebook
 

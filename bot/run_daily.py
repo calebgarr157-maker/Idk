@@ -3,6 +3,8 @@
   python -m bot.run_daily            # normal daily run (skips if today is already logged)
   python -m bot.run_daily --force    # re-run today (replaces nothing in the book if it already traded)
   python -m bot.run_daily --dry-run  # compute and print, write nothing
+  python -m bot.run_daily --dry-run --show-context   # print the full proposal for a decider
+  python -m bot.run_daily --decision hold --reason "..."   # apply a decision made outside the script
 """
 import argparse
 import datetime as dt
@@ -40,7 +42,14 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--force", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--show-context", action="store_true", help="print the full proposal sent to the decider")
+    ap.add_argument("--decision", choices=["execute", "hold"],
+                    help="use this decision instead of calling the API (e.g. made by a Claude session)")
+    ap.add_argument("--reason", default="", help="reason for --decision")
+    ap.add_argument("--decider", default="claude session", help="who made --decision")
     args = ap.parse_args()
+    if args.decision and not args.reason:
+        ap.error("--decision needs --reason")
     cfg = load_config()
     tickers, bench = cfg["tickers"], cfg["benchmark"]
 
@@ -124,9 +133,15 @@ def main() -> None:
                "reason": f"Sharpe gate failed: candidate {gate['candidate_sharpe']:.2f} vs book {gate['book_sharpe']:.2f}"}
     elif turnover < cfg["min_turnover"]:
         dec = {"decision": "hold", "decider": "gate", "reason": f"turnover {turnover:.1%} below minimum {cfg['min_turnover']:.0%}"}
+    elif args.decision:
+        dec = {"decision": args.decision, "reason": args.reason.strip(), "decider": args.decider}
     else:
         dec = claude_decision(ctx, cfg)
 
+    needs_decision = gate["passed"] and turnover >= cfg["min_turnover"]
+    if args.show_context:
+        print("DECISION NEEDED" if needs_decision else "NO DECISION NEEDED (gate holds)")
+        print(json.dumps(ctx, indent=2, default=float))
     print(json.dumps({"date": date, "gate": ctx["gate"], "turnover": ctx["turnover"],
                       "exposure": ctx["exposure"], **dec}, indent=2))
     print(pd.DataFrame(ctx["per_ticker"]).set_index("ticker")[
