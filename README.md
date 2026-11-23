@@ -49,6 +49,6 @@ python -m pytest -q tests
 
 This is paper only, and there is no live broker code. Things to settle first:
 - Run a few months of paper results and compare them in `logs/weekly.csv`.
-- **Net short**: the per-name cap still allows up to 90% net short across 9 names. Decide whether you want a net floor too.
+- **Net short**: the per-name cap still allows up to 90% net short across 9 names. Set `min_net_exposure` in `bot/config.json` (e.g. `-0.2`) to also limit the book's total net short. It's off by default.
 - Paper fills are at the same close used for the decision. Live fills would be the next open or later, with real borrow rates and locate limits.
 - Yahoo targets are free consensus data with no SLA. They can lag analyst changes or disappear for a ticker.

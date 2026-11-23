@@ -56,7 +56,7 @@ def main() -> None:
     rets = model.log_returns(closes[tickers])
 
     bl = model.black_litterman(rets, px[tickers], targets, cfg)
-    candidate = model.apply_caps(bl["w_raw"], cfg["max_single_short"], cfg["max_single_long"])
+    candidate = model.apply_caps(bl["w_raw"], cfg["max_single_short"], cfg["max_single_long"], cfg.get("min_net_exposure"))
 
     book = Book.load(cfg["start_capital"])
     seed_trades = []
@@ -105,7 +105,8 @@ def main() -> None:
             "current_net": round(float(book_w.sum()), 4), "current_gross": round(float(book_w.abs().sum()), 4),
             "proposed_net": round(float(candidate.sum()), 4), "proposed_gross": round(float(candidate.abs().sum()), 4),
             "uncapped_net": round(float(bl["w_raw"].sum()), 4),
-            "caps": {"max_single_short": cfg["max_single_short"], "max_single_long": cfg["max_single_long"]},
+            "caps": {"max_single_short": cfg["max_single_short"], "max_single_long": cfg["max_single_long"],
+                     "min_net_exposure": cfg.get("min_net_exposure")},
         },
         "book": {
             "nav": round(nav, 2), "start_date": book.start_date, "start_nav": book.start_nav,

@@ -25,6 +25,15 @@ def test_short_cap_limits_each_short():
     assert capped.sum() > raw.sum()  # less net short; the clipped part sits in cash
 
 
+def test_optional_net_floor():
+    raw = pd.Series([-0.3] * 8 + [0.05], index=T)
+    capped = model.apply_caps(raw, 0.10, 0.30)
+    assert abs(capped.sum() - (-0.75)) < 1e-9  # per-name cap alone still allows -75% net
+    floored = model.apply_caps(raw, 0.10, 0.30, min_net=-0.2)
+    assert abs(floored.sum() - (-0.2)) < 1e-9
+    assert floored.min() >= -0.10 and floored["I"] == 0.05
+
+
 def test_no_views_gives_market_weights():
     rets = fake_rets()
     px = pd.Series(100.0, index=T)

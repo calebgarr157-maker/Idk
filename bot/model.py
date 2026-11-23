@@ -67,9 +67,19 @@ def black_litterman(rets: pd.DataFrame, price: pd.Series, targets: pd.DataFrame,
     }
 
 
-def apply_caps(w: pd.Series, max_short: float, max_long: float) -> pd.Series:
-    """Clip each name to [-max_short, +max_long]. Whatever is clipped off stays in cash."""
-    return w.clip(lower=-abs(max_short), upper=abs(max_long))
+def apply_caps(w: pd.Series, max_short: float, max_long: float, min_net: float | None = None) -> pd.Series:
+    """Clip each name to [-max_short, +max_long]. Whatever is clipped off stays in cash.
+
+    If min_net is set (e.g. -0.2) and the book is still more net short than that,
+    all shorts are scaled down together until net exposure equals min_net.
+    """
+    w = w.clip(lower=-abs(max_short), upper=abs(max_long))
+    if min_net is not None and w.sum() < min_net:
+        shorts = w[w < 0].sum()
+        need = min_net - w[w > 0].sum()  # the short total we can afford
+        if shorts < 0:
+            w = w.where(w >= 0, w * max(need, shorts) / shorts if need < 0 else 0.0)
+    return w
 
 
 def trailing_sharpe(rets: pd.DataFrame, w: pd.Series, window: int) -> float:

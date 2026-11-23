@@ -13,6 +13,7 @@
 
   "max_single_short": 0.10,
   "max_single_long": 0.30,
+  "min_net_exposure": null,
 
   "start_capital": 100000,
   "cost_bps": 5,
