@@ -1,0 +1,2 @@
+date,decision,decider,reason,gate_passed,candidate_sharpe,book_sharpe,turnover,proposed_net,uncapped_net,targets_changed,proposed_weights
+2026-11-20,hold,gate,Sharpe gate failed: candidate -3.33 vs book -2.24,False,-3.3329,-2.2429,0.7246,0.9183,0.9183,AAPL:new;MSFT:new;NVDA:new;AMZN:new;GOOGL:new;JPM:new;XOM:new;JNJ:new;PG:new,"{""AAPL"": -0.0408, ""MSFT"": 0.0948, ""NVDA"": 0.079, ""AMZN"": 0.0056, ""GOOGL"": 0.1818, ""JPM"": 0.1944, ""XOM"": 0.2605, ""JNJ"": 0.0139, ""PG"": 0.1291}"

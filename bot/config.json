@@ -1,0 +1,23 @@
+{
+  "tickers": ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL", "JPM", "XOM", "JNJ", "PG"],
+  "benchmark": "SPY",
+
+  "tau": 0.05,
+  "risk_aversion": 2.4,
+  "target_horizon_days": 252,
+  "cov_lookback_days": 252,
+  "scale_confidence_by_dispersion": true,
+
+  "sharpe_window_days": 63,
+  "min_turnover": 0.02,
+
+  "max_single_short": 0.10,
+  "max_single_long": 0.30,
+
+  "start_capital": 100000,
+  "cost_bps": 5,
+  "short_borrow_bps_annual": 50,
+
+  "decider_model": "claude-fable-5-2",
+  "decider_effort": "high"
+}
