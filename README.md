@@ -18,7 +18,7 @@ analysts to real stocks and real Wall Street price targets from Yahoo Finance.
 6. **Claude decides**: if the gate passes, Claude (`claude-fable-5-2`) sees the proposal and answers
    `execute` or `hold` with a reason. It can't change the weights. With no API key, or if the call
    fails, a simple rule decides and the log says so. Everything goes in `logs/decisions.csv`.
-7. **Paper book**: trades fill at the close, with 5 bps cost and 0.5%/yr short borrow. Positions are in
+7. **Paper book**: an `execute` decision is queued and fills at the **next trading day's open**, with 5 bps cost and 0.5%/yr short borrow. Positions are in
    `state/book.json`, fills in `logs/trades.csv`, daily NAV next to SPY in `logs/nav.csv`.
    The book starts at equal weight, as the notebook did.
 8. **Weekly vs SPY**: every Friday, `reports/weekly/<date>.md` and `logs/weekly.csv`.
@@ -52,5 +52,5 @@ Or use `.github/workflows/daily.yml`, which runs at 21:30 UTC on weekdays and co
 This is paper only, and there is no live broker code. Things to settle first:
 - Run a few months of paper results and compare them in `logs/weekly.csv`.
 - **Net short**: the per-name cap still allows up to 90% net short across 9 names. Set `min_net_exposure` in `bot/config.json` (e.g. `-0.2`) to also limit the book's total net short. It's off by default.
-- Paper fills are at the same close used for the decision. Live fills would be the next open or later, with real borrow rates and locate limits.
+- Paper fills use the next day's open, as a live account would. Real fills also face spreads, borrow rates and locate limits.
 - Yahoo targets are free consensus data with no SLA. They can lag analyst changes or disappear for a ticker.

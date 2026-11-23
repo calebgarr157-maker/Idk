@@ -1,23 +1,34 @@
 """Market data and analyst price targets from Yahoo Finance (via yfinance)."""
+import datetime as dt
 import math
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import yfinance as yf
 
 
-def fetch_closes(tickers: list[str], days: int) -> pd.DataFrame:
-    """Adjusted daily closes, one column per ticker, oldest first."""
+def fetch_prices(tickers: list[str], days: int) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Adjusted daily (closes, opens), one column per ticker, oldest first."""
     period = f"{int(days * 1.6) + 30}d"  # calendar days covering `days` trading days
-    df = yf.download(tickers, period=period, interval="1d", auto_adjust=True,
-                     progress=False, threads=True)["Close"]
-    if isinstance(df, pd.Series):
-        df = df.to_frame(tickers[0])
-    df = df[tickers].dropna(how="all").ffill()
-    missing = [t for t in tickers if df[t].isna().all()]
-    if missing:
-        raise RuntimeError(f"no price history for {missing}")
-    df.index = pd.to_datetime(df.index).tz_localize(None).normalize()
-    return df.dropna()
+    raw = yf.download(tickers, period=period, interval="1d", auto_adjust=True,
+                      progress=False, threads=True)
+    out = []
+    for field in ("Close", "Open"):
+        df = raw[field]
+        if isinstance(df, pd.Series):
+            df = df.to_frame(tickers[0])
+        df = df[tickers].dropna(how="all").ffill()
+        missing = [t for t in tickers if df[t].isna().all()]
+        if missing:
+            raise RuntimeError(f"no price history for {missing}")
+        df.index = pd.to_datetime(df.index).tz_localize(None).normalize()
+        out.append(df.dropna())
+    closes, opens = out
+    # Before 4:15pm ET, today's bar is still moving: leave it out so a mid-day run uses yesterday's close.
+    now = dt.datetime.now(ZoneInfo("America/New_York"))
+    if now.time() < dt.time(16, 15) and len(closes) and closes.index[-1].date() == now.date():
+        closes = closes.iloc[:-1]
+    return closes, opens
 
 
 def _num(x):

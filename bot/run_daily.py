@@ -53,7 +53,7 @@ def main() -> None:
     cfg = load_config()
     tickers, bench = cfg["tickers"], cfg["benchmark"]
 
-    closes = data.fetch_closes(tickers + [bench], cfg["cov_lookback_days"] + cfg["sharpe_window_days"] + 10)
+    closes, opens = data.fetch_prices(tickers + [bench], cfg["cov_lookback_days"] + cfg["sharpe_window_days"] + 10)
     date = str(closes.index[-1].date())
     if not args.force and not args.dry_run and any(r["date"] == date for r in read_rows(LOGS / "decisions.csv")):
         print(f"{date} already logged; use --force to re-run")
@@ -80,6 +80,16 @@ def main() -> None:
     if book.last_date and book.last_date < date:
         days = (dt.date.fromisoformat(date) - dt.date.fromisoformat(book.last_date)).days
         borrow = book.accrue_borrow(px, days, cfg["short_borrow_bps_annual"])
+    # Fill yesterday's execute decision at the first open after it was made.
+    fill_trades, fill_note = [], ""
+    if book.pending:
+        after = opens.index[opens.index > pd.Timestamp(book.pending["decided"])]
+        if len(after):
+            fdate = after[0]
+            fill_trades = book.rebalance(pd.Series(book.pending["weights"]), opens.loc[fdate], cfg["cost_bps"], str(fdate.date()))
+            fill_note = f"filled {book.pending['decided']} decision at {fdate.date()} open ({len(fill_trades)} trades)"
+            book.pending = None
+            print(fill_note)
     book_w = book.weights(px, tickers)
     nav = book.nav(px)
 
@@ -123,6 +133,7 @@ def main() -> None:
             "benchmark_return_since_start": round(float(px[bench]) / book.benchmark_start - 1, 4),
             "drawdown_from_peak": round(nav / peak - 1, 4),
         },
+        "order_filled_at_todays_open": fill_note or None,
         "recent_decisions": [
             {k: r[k] for k in ("date", "decision", "reason")} for r in read_rows(LOGS / "decisions.csv")[-5:]
         ],
@@ -159,9 +170,10 @@ def main() -> None:
          "changed": changes.get(t, "")}
         for t in tickers
     ])
-    # 2. trade if Claude (or the rule) said execute
-    trades = book.rebalance(candidate, px, cfg["cost_bps"], date) if dec["decision"] == "execute" else []
-    append_rows(LOGS / "trades.csv", seed_trades + trades)
+    # 2. an execute decision is queued and fills at the next trading day's open
+    if dec["decision"] == "execute":
+        book.pending = {"decided": date, "weights": {t: round(float(w), 6) for t, w in candidate.items()}}
+    append_rows(LOGS / "trades.csv", seed_trades + fill_trades)
     # 3. log the decision
     append_rows(LOGS / "decisions.csv", [{
         "date": date, "decision": dec["decision"], "decider": dec["decider"], "reason": dec["reason"],

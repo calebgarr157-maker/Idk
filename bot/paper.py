@@ -17,6 +17,7 @@ class Book:
     start_nav: float = 0.0
     benchmark_start: float = 0.0
     last_date: str = ""
+    pending: dict | None = None  # {"decided": date, "weights": {ticker: w}} waiting for the next open
 
     @classmethod
     def load(cls, start_capital: float) -> "Book":

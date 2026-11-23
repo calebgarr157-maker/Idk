@@ -13,6 +13,7 @@ targets into views, builds a candidate portfolio, and only proposes it when its 
 beats the current book's (the Sharpe gate). Per-name caps on longs and shorts are already applied.
 
 Decide whether to EXECUTE the proposed rebalance exactly as given or HOLD the current book.
+An execute order fills at the next trading day's open, not at today's close.
 You cannot change the weights. Weigh:
 - what is driving the change (new or revised analyst targets vs. just price drift),
 - whether the Sharpe improvement is worth the turnover and trading cost,
