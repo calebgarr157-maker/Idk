@@ -71,3 +71,19 @@ def test_decision_falls_back_to_rule_without_key(monkeypatch):
     d = claude_decision(ctx, CFG)
     assert d["decider"] == "rule" and d["decision"] == "execute"
     assert rule_decision({"gate": {"candidate_sharpe": 0.25, "book_sharpe": 0.2}, "turnover": 0.3})["decision"] == "hold"
+
+
+def test_weekly_report_vs_benchmark(tmp_path, monkeypatch):
+    from bot import report
+    logs, reps = tmp_path / "logs", tmp_path / "reports"
+    logs.mkdir()
+    monkeypatch.setattr(report, "LOGS", logs)
+    monkeypatch.setattr(report, "REPORTS", reps)
+    dates = pd.bdate_range("2026-11-02", periods=10)
+    pd.DataFrame({"date": dates.date, "nav": np.linspace(100_000, 102_000, 10),
+                  "benchmark": np.linspace(600, 606, 10)}).to_csv(logs / "nav.csv", index=False)
+    out = report.weekly_report()
+    text = open(out).read()
+    assert "This week" in text and "SPY" in text
+    row = pd.read_csv(logs / "weekly.csv").iloc[-1]
+    assert row["total_book"] > row["total_spy"] > 0
